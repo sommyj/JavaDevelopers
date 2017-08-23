@@ -1,4 +1,4 @@
-package sommy.org.javadevelopers;
+package sommy.org.javadevelopers.model;
 
 /**
  * Created by somto on 7/23/17.

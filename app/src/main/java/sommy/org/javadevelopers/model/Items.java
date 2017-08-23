@@ -1,7 +1,4 @@
-package sommy.org.javadevelopers;
-
-import java.net.URI;
-import java.net.URL;
+package sommy.org.javadevelopers.model;
 
 /**
  * Created by somto on 7/23/17.
