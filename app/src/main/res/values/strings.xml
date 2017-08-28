@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Java Developers</string>
+    <string name="default_text">TextView</string>
     <string name="error_message">
         Failed to get results. Please try again.
     </string>
+    <string name="user_profile_image">User Profile Image</string>
 </resources>

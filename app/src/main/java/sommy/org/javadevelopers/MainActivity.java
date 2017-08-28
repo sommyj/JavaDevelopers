@@ -4,13 +4,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.AsyncTaskLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,14 +26,15 @@ import java.util.List;
 
 import sommy.org.javadevelopers.utilities.NetworkUtils;
 
-import static sommy.org.javadevelopers.R.id.listView;
+public class MainActivity extends AppCompatActivity implements UserListAdapter.UserListOnClickHandler, LoaderManager.LoaderCallbacks<String>{
 
-public class MainActivity extends AppCompatActivity {
+    private static final int GITHUB_SEARCH_LOADER = 22;
 
-    private CustomListAdapter adapter;
+    private UserListAdapter userListAdapter;
 
-    private ListView mListView;
-    private TextView mErrorText;
+    private RecyclerView mRecyclerView;
+    private TextView mErrorTextView;
+    private ProgressBar mPbIndicator;
 
     private List<String> usernameList = new ArrayList<>();
     private List<String> userProfileUrlList =new ArrayList<>();
@@ -41,32 +45,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mListView = (ListView) findViewById(listView);
+        mRecyclerView = (RecyclerView) findViewById(R.id.recyclerView);
 
-        mErrorText = (TextView) findViewById(R.id.error_text);
+        mErrorTextView = (TextView) findViewById(R.id.error_textView);
 
-        //If an item is clicked it launches you to the child class(ProfileActivity.java)
-        // and it passes some info with the use of intent.
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mPbIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
 
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view,
-                                    int position, long id) {
-                // TODO Auto-generated method stub
-                String usernameString = usernameList.get(position).toString();
-                String userProfileImageString = userProfileImageList.get(position).toString();
-                String userProfileUrlString = userProfileUrlList.get(position).toString();
-                String[] strings = {usernameString, userProfileImageString, userProfileUrlString};
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
 
-                Toast.makeText(getApplicationContext(), strings[0], Toast.LENGTH_SHORT).show();
+        mRecyclerView.setLayoutManager(layoutManager);
 
-                Intent startProfileActivityIntent = new Intent(MainActivity.this, ProfileActivity.class);
-                startProfileActivityIntent.putExtra(Intent.EXTRA_TEXT, strings);
+        mRecyclerView.setHasFixedSize(true);
 
-                startActivity(startProfileActivityIntent);
+        userListAdapter = new UserListAdapter(MainActivity.this, this);
+        mRecyclerView.setAdapter(userListAdapter);
 
-            }
-        });
     }
 
     /**
@@ -83,9 +76,10 @@ public class MainActivity extends AppCompatActivity {
      * This method start the content view if there is active network or send and error message if not.
      */
     protected void onStart(){
+        super.onStart();
         if(isNetworkAvailable()){
             super.onStart();
-            new HttpRequestTask().execute();
+            getSupportLoaderManager().initLoader(GITHUB_SEARCH_LOADER, null, this);
         }else{
             super.onStart();
             showErrorMessage();
@@ -94,62 +88,111 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    protected void onStop(){
+        super.onStop();
+        usernameList.clear();
+        userProfileImageList.clear();
+        userProfileUrlList.clear();
+
+    }
+
     /**
-     * This method will make the error message visible and hide the LIST
-     * View.
+     * This method will make the error message visible and hide the ListView.
      * <p>
      * Since it is okay to redundantly set the visibility of a View, we don't
      * need to check whether each view is currently visible or invisible.
      */
     public void showErrorMessage(){
-        mListView.setVisibility(View.INVISIBLE);
-        mErrorText.setVisibility(View.VISIBLE);
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mErrorTextView.setVisibility(View.VISIBLE);
     }
 
     /**
-     * This is used to fetch for the list of Java Developers in Lagos using the Github API
+     * If an item is clicked it launches you to the child class(ProfileActivity.java).
+     * and it passes some info with the use of intent.
+     * @param strings The Github data to be displayed.
      */
-    private class HttpRequestTask extends AsyncTask<Void, Void, String>{
+    @Override
+    public void onClick(String[] strings){
+        Intent startProfileActivityIntent = new Intent(MainActivity.this, ProfileActivity.class);
+                startProfileActivityIntent.putExtra(Intent.EXTRA_TEXT, strings);
 
-        @Override
-        protected String doInBackground(Void... params){
-            try{
-                final String url = "https://api.github.com/search/users?q=location:lagos+language:java";
-//                String url = NetworkUtils.buildUrl().toString();
-                String s = NetworkUtils.run(url);
-                return s;
-            }catch (Exception e){
-                Log.e("MainActivity", e.getMessage(), e);
-            }
-            return null;
-        }
+                startActivity(startProfileActivityIntent);
+    }
 
-        @Override
-        protected  void onPostExecute(String s){
-            if(null == s){
-                showErrorMessage();
-                Toast.makeText(MainActivity.this,"Check your internet connection",Toast.LENGTH_LONG).show();
-            }else {
-                //Getting the Json values of String result received.
-                JSONArray items;
-                String totalCount = "0";
-                try {
-                    JSONObject object = new JSONObject(s);
-                    totalCount = object.getString("total_count");
-                    items = object.getJSONArray("items");
-                    for (int i = 0; i < items.length(); i++) {
-                        usernameList.add(items.getJSONObject(i).getString("login"));
-                        userProfileImageList.add(items.getJSONObject(i).getString("avatar_url"));
-                        userProfileUrlList.add(items.getJSONObject(i).getString("html_url"));
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
+    /**
+     * This method is used to fetch for the list of Java Developers in Lagos using the Github API.
+     * @param id The LoaderManager an ID
+     * @param args The bundle that will receive data from initialize loader.
+     * @return An AsyncTaskLoader that will return the Loader to the onLoadFinished method.
+     */
+    @Override
+    public Loader<String> onCreateLoader(int id, Bundle args) {
+        return new AsyncTaskLoader<String>(this) {
+
+            String mGithubJson;
+
+            @Override
+            protected void onStartLoading(){
+
+                mPbIndicator.setVisibility(View.VISIBLE);
+                if(mGithubJson != null){
+                    deliverResult(mGithubJson);
+                }else {
+                    forceLoad();
                 }
-                Toast.makeText(MainActivity.this, "Total Count of user: "+totalCount, Toast.LENGTH_LONG).show();
-
-                adapter = new CustomListAdapter(MainActivity.this, usernameList, userProfileImageList);
-                mListView.setAdapter(adapter);
             }
+
+            @Override
+            public String loadInBackground() {
+                try {
+                    final String url = "https://api.github.com/search/users?q=location:lagos+language:java";
+//                String url = NetworkUtils.buildUrl().toString();
+                    return NetworkUtils.run(url);
+                } catch (Exception e) {
+                    Log.e("MainActivity", e.getMessage(), e);
+                }
+                return null;
+            }
+
+            @Override
+            public void deliverResult(String githubJson) {
+                mGithubJson = githubJson;
+                super.deliverResult(githubJson);
+            }
+        };
+    }
+
+    @Override
+    public void onLoadFinished(Loader<String> loader, String data) {
+
+        mPbIndicator.setVisibility(View.INVISIBLE);
+        if (null == data) {
+            showErrorMessage();
+            Toast.makeText(MainActivity.this, "Check your internet connection", Toast.LENGTH_LONG).show();
+        } else {
+            //Getting the Json values of String result received.
+            JSONArray items;
+            JSONObject object;
+            try {
+                object = new JSONObject(data);
+                items = object.getJSONArray("items");
+                for (int i = 0; i < items.length(); i++) {
+                    usernameList.add(items.getJSONObject(i).getString("login"));
+                    userProfileImageList.add(items.getJSONObject(i).getString("avatar_url"));
+                    userProfileUrlList.add(items.getJSONObject(i).getString("html_url"));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            userListAdapter.setGithubJsonData(usernameList, userProfileImageList, userProfileUrlList );
+            Toast.makeText(MainActivity.this, usernameList.size()+" Java Developers in Lagos", Toast.LENGTH_SHORT ).show();
         }
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<String> loader) {
+
     }
 }
