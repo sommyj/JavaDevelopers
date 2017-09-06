@@ -14,6 +14,8 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
+import sommy.org.javadevelopers.utilities.CircleTransform;
+
 /** This class exposes a list of github details to a the RecyclerView.
  * Created by somto on 8/25/17.
  */
@@ -78,7 +80,7 @@ class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.UserListAdapt
         String userProfileImageString = userProfileImageList.get(position);
 
         holder.mTextView.setText(usernameString);
-        Picasso.with(context).load(userProfileImageString).into(holder.mImageView);
+        Picasso.with(context).load(userProfileImageString).transform(new CircleTransform()).into(holder.mImageView);
     }
 
     /**

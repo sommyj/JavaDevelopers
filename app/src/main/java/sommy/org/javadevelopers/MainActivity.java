@@ -12,6 +12,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -30,8 +32,7 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
 
     private static final int GITHUB_SEARCH_LOADER = 22;
 
-    private UserListAdapter userListAdapter;
-
+    private UserListAdapter mUserListAdapter;
     private RecyclerView mRecyclerView;
     private TextView mErrorTextView;
     private ProgressBar mPbIndicator;
@@ -57,8 +58,8 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
 
         mRecyclerView.setHasFixedSize(true);
 
-        userListAdapter = new UserListAdapter(MainActivity.this, this);
-        mRecyclerView.setAdapter(userListAdapter);
+        mUserListAdapter = new UserListAdapter(MainActivity.this, this);
+        mRecyclerView.setAdapter(mUserListAdapter);
 
     }
 
@@ -77,34 +78,33 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
      */
     protected void onStart(){
         super.onStart();
-        if(isNetworkAvailable()){
-            super.onStart();
+        if(usernameList.isEmpty() && userProfileUrlList.isEmpty() && userProfileImageList.isEmpty()){
             getSupportLoaderManager().initLoader(GITHUB_SEARCH_LOADER, null, this);
-        }else{
-            super.onStart();
-            showErrorMessage();
-            Toast.makeText(MainActivity.this,"Check your internet connection",Toast.LENGTH_LONG).show();
         }
 
     }
 
     protected void onStop(){
         super.onStop();
-        usernameList.clear();
-        userProfileImageList.clear();
-        userProfileUrlList.clear();
-
+        invalidateData();
     }
+
 
     /**
      * This method will make the error message visible and hide the ListView.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
      */
-    public void showErrorMessage(){
+    private void showErrorMessage(){
         mRecyclerView.setVisibility(View.INVISIBLE);
         mErrorTextView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * This method will make the View for the github data visible and
+     * hide the error message.
+     */
+    private void showGithubDataView() {
+        mErrorTextView.setVisibility(View.INVISIBLE);
+        mRecyclerView.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            userListAdapter.setGithubJsonData(usernameList, userProfileImageList, userProfileUrlList );
+            mUserListAdapter.setGithubJsonData(usernameList, userProfileImageList, userProfileUrlList );
             Toast.makeText(MainActivity.this, usernameList.size()+" Java Developers in Lagos", Toast.LENGTH_SHORT ).show();
         }
 
@@ -194,5 +194,32 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
     @Override
     public void onLoaderReset(Loader<String> loader) {
 
+    }
+
+    /**
+     * This method is used when we are resetting data, so that at one point in time during a
+     * refresh of our data, you can see that there is no data showing.
+     */
+    private void invalidateData() {
+        usernameList.clear();
+        userProfileImageList.clear();
+        userProfileUrlList.clear();
+        mUserListAdapter.setGithubJsonData(usernameList, userProfileImageList, userProfileUrlList );
+        showGithubDataView();
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.list, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    public boolean onOptionsItemSelected(MenuItem menuItem){
+        int itemThatWasSelected = menuItem.getItemId();
+        if(itemThatWasSelected == R.id.action_refresh) {
+            invalidateData();
+            getSupportLoaderManager().restartLoader(GITHUB_SEARCH_LOADER, null, this);
+
+        }
+            return super.onOptionsItemSelected(menuItem);
     }
 }

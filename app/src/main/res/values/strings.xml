@@ -5,4 +5,7 @@
         Failed to get results. Please try again.
     </string>
     <string name="user_profile_image">User Profile Image</string>
+    <string name="profile_page">Profile</string>
+    <string name="refresh_button">Refresh</string>
+    <string name="share_button">Share</string>
 </resources>
