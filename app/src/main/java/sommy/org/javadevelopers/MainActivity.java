@@ -1,9 +1,6 @@
 package sommy.org.javadevelopers;
 
-import android.content.Context;
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
@@ -37,9 +34,7 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
     private TextView mErrorTextView;
     private ProgressBar mPbIndicator;
 
-    private List<String> usernameList = new ArrayList<>();
-    private List<String> userProfileUrlList =new ArrayList<>();
-    private List <String> userProfileImageList = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,29 +59,12 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
     }
 
     /**
-     * This method is use to check for active network on the device.
-     * @return a boolean variable ture or false if network is avalable on the device.
-     */
-    private boolean isNetworkAvailable(){
-        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activenetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activenetworkInfo != null && activenetworkInfo.isConnected();
-    }
-
-    /**
      * This method start the content view if there is active network or send and error message if not.
      */
-    protected void onStart(){
-        super.onStart();
-        if(usernameList.isEmpty() && userProfileUrlList.isEmpty() && userProfileImageList.isEmpty()){
+    protected void onResume(){
+        super.onResume();
             getSupportLoaderManager().initLoader(GITHUB_SEARCH_LOADER, null, this);
-        }
 
-    }
-
-    protected void onStop(){
-        super.onStop();
-        invalidateData();
     }
 
 
@@ -171,6 +149,10 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
             showErrorMessage();
             Toast.makeText(MainActivity.this, "Check your internet connection", Toast.LENGTH_LONG).show();
         } else {
+            List<String> usernameList = new ArrayList<>();
+            List<String> userProfileUrlList =new ArrayList<>();
+            List <String> userProfileImageList = new ArrayList<>();
+
             //Getting the Json values of String result received.
             JSONArray items;
             JSONObject object;
@@ -201,9 +183,9 @@ public class MainActivity extends AppCompatActivity implements UserListAdapter.U
      * refresh of our data, you can see that there is no data showing.
      */
     private void invalidateData() {
-        usernameList.clear();
-        userProfileImageList.clear();
-        userProfileUrlList.clear();
+        List<String> usernameList = new ArrayList<>();
+        List<String> userProfileUrlList =new ArrayList<>();
+        List <String> userProfileImageList = new ArrayList<>();
         mUserListAdapter.setGithubJsonData(usernameList, userProfileImageList, userProfileUrlList );
         showGithubDataView();
     }
