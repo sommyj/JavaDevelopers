@@ -16,7 +16,8 @@ import java.util.List;
 
 import sommy.org.javadevelopers.utilities.CircleTransform;
 
-/** This class exposes a list of github details to a the RecyclerView.
+/**
+ * This class exposes a list of github details to a the RecyclerView.
  * Created by somto on 8/25/17.
  */
 
@@ -33,7 +34,7 @@ class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.UserListAdapt
     private List <String> userProfileImageList = new ArrayList<>();
 
     /**
-     * Creates a ForecastAdapter.
+     * Creates a UserListAdapter.
      *
      * @param mClickHandler The on-click handler for this adapter. This single handler is called
      *                     when an item is clicked.
@@ -65,7 +66,7 @@ class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.UserListAdapt
 
     /**
      * OnBindViewHolder is called by the RecyclerView to display the data at the specified
-     * position. In this method, we update the contents of the ViewHolder to display the weather
+     * position. In this method, we update the contents of the ViewHolder to display the Github
      * details for this particular position, using the "position" argument that is conveniently
      * passed into us.
      *
